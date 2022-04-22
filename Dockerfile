@@ -1,69 +1,49 @@
-FROM php:7.4-fpm-alpine3.14
+FROM php:7.2-fpm
 
-#LABEL Maintainer Kashyap Merai <kashyapk62@gmail.com>
+# Copy composer.lock and composer.json
+COPY composer.lock composer.json /var/www/
 
-# Add Repositories
-RUN rm -f /etc/apk/repositories &&\
-    echo "http://dl-cdn.alpinelinux.org/alpine/v3.14/main" >> /etc/apk/repositories && \
-    echo "http://dl-cdn.alpinelinux.org/alpine/v3.14/community" >> /etc/apk/repositories
-
-# Add Build Dependencies
-RUN apk update && apk add --no-cache --virtual .build-deps  \
-    zlib-dev \
-    libjpeg-turbo-dev \
-    libpng-dev \
-    libxml2-dev \
-    bzip2-dev \
-    zip 
-
-# Add Production Dependencies
-RUN apk add --update --no-cache \
-    jpegoptim \
-    pngquant \
-    optipng \
-    supervisor \
-    nano \
-    icu-dev \
-    freetype-dev \
-    nginx \
-    mysql-client \
-    libzip-dev
-
-# Configure & Install Extension
-RUN docker-php-ext-configure \
-    opcache --enable-opcache &&\
-    docker-php-ext-configure gd --with-jpeg=/usr/include/ --with-freetype=/usr/include/ && \
-    docker-php-ext-install \
-    opcache \
-    mysqli \
-    pdo \
-    pdo_mysql \
-    sockets \
-    json \
-    intl \
-    gd \
-    xml \
-    bz2 \
-    pcntl \
-    bcmath \
-    zip
-
-# Add Composer
-RUN curl -s https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin/ --filename=composer
-ENV COMPOSER_ALLOW_SUPERUSER=1
-ENV PATH="./vendor/bin:$PATH"
-
-COPY opcache.ini $PHP_INI_DIR/conf.d/
-COPY php.ini $PHP_INI_DIR/conf.d/
-
-# Setup Crond and Supervisor by default
-RUN echo '*  *  *  *  * /usr/local/bin/php  /var/www/artisan schedule:run >> /dev/null 2>&1' > /etc/crontabs/root && mkdir /etc/supervisor.d
-ADD master.ini /etc/supervisor.d/
-ADD default.conf /etc/nginx/conf.d/
-
-# Remove Build Dependencies
-RUN apk del -f .build-deps
-# Setup Working Dir
+# Set working directory
 WORKDIR /var/www
 
-CMD ["/usr/bin/supervisord"]
+# Install dependencies
+#RUN apt-get update && apt-get install -y \
+   # build-essential \
+    #mysql-client \
+   # libpng-dev \
+    #libjpeg62-turbo-dev \
+    #libfreetype6-dev \
+    #locales \
+   # zip \
+    #jpegoptim optipng pngquant gifsicle \
+    #vim \
+    #unzip \
+    #git \
+    #curl
+# Clear cache
+#RUN apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Install extensions
+#RUN docker-php-ext-install pdo_mysql mbstring zip exif pcntl
+#RUN docker-php-ext-configure gd --with-gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/ --with-png-dir=/usr/include/
+#RUN docker-php-ext-install gd
+
+# Install composer
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+
+# Add user for laravel application
+RUN groupadd -g 1000 www
+RUN useradd -u 1000 -ms /bin/bash -g www www
+
+# Copy existing application directory contents
+COPY . /var/www
+
+# Copy existing application directory permissions
+COPY --chown=www:www . /var/www
+
+# Change current user to www
+USER www
+
+# Expose port 9000 and start php-fpm server
+EXPOSE 9000
+CMD ["php-fpm"]
