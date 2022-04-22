@@ -1,7 +1,7 @@
 FROM php:7.4-fpm
 
 # Arguments defined in docker-compose.yml
-ARG user
+ENV user=abc
 ENV uid=1000
 
 # Install system dependencies
