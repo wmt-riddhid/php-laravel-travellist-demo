@@ -1,34 +1,69 @@
-FROM php:7.4-fpm
+FROM php:7.4-fpm-alpine3.14
 
-# Arguments defined in docker-compose.yml
-ARG user
-ARG uid
+#LABEL Maintainer Kashyap Merai <kashyapk62@gmail.com>
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-	git \
-	curl \
-	libpng-dev \
-	libonig-dev \
-	libxml2-dev \
-	zip \
-	unzip
+# Add Repositories
+RUN rm -f /etc/apk/repositories &&\
+    echo "http://dl-cdn.alpinelinux.org/alpine/v3.14/main" >> /etc/apk/repositories && \
+    echo "http://dl-cdn.alpinelinux.org/alpine/v3.14/community" >> /etc/apk/repositories
 
-# Clear cache
-RUN apt-get clean && rm -rf /var/lib/apt/lists/*
+# Add Build Dependencies
+RUN apk update && apk add --no-cache --virtual .build-deps  \
+    zlib-dev \
+    libjpeg-turbo-dev \
+    libpng-dev \
+    libxml2-dev \
+    bzip2-dev \
+    zip 
 
-# Install PHP extensions
-RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
+# Add Production Dependencies
+RUN apk add --update --no-cache \
+    jpegoptim \
+    pngquant \
+    optipng \
+    supervisor \
+    nano \
+    icu-dev \
+    freetype-dev \
+    nginx \
+    mysql-client \
+    libzip-dev
 
-# Get latest composer
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+# Configure & Install Extension
+RUN docker-php-ext-configure \
+    opcache --enable-opcache &&\
+    docker-php-ext-configure gd --with-jpeg=/usr/include/ --with-freetype=/usr/include/ && \
+    docker-php-ext-install \
+    opcache \
+    mysqli \
+    pdo \
+    pdo_mysql \
+    sockets \
+    json \
+    intl \
+    gd \
+    xml \
+    bz2 \
+    pcntl \
+    bcmath \
+    zip
 
-# Create system user to run composer and Artisan commands
-#RUN useradd -G www-data,root -u $uid -d /home/$user $user
-RUN mkdir -p /home/$user/.composer && \
-    chown -R $user:$user /home/$user
+# Add Composer
+RUN curl -s https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin/ --filename=composer
+ENV COMPOSER_ALLOW_SUPERUSER=1
+ENV PATH="./vendor/bin:$PATH"
 
-# Set working directory
+COPY opcache.ini $PHP_INI_DIR/conf.d/
+COPY php.ini $PHP_INI_DIR/conf.d/
+
+# Setup Crond and Supervisor by default
+RUN echo '*  *  *  *  * /usr/local/bin/php  /var/www/artisan schedule:run >> /dev/null 2>&1' > /etc/crontabs/root && mkdir /etc/supervisor.d
+ADD master.ini /etc/supervisor.d/
+ADD default.conf /etc/nginx/conf.d/
+
+# Remove Build Dependencies
+RUN apk del -f .build-deps
+# Setup Working Dir
 WORKDIR /var/www
 
-USER $user	
+CMD ["/usr/bin/supervisord"]
