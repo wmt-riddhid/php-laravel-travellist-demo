@@ -11,10 +11,10 @@ jobs:
 
     steps:
       - name: chackout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v1
       
       - name: setup PHP
-        uses: actions/setup-php@v2
+        uses: actions/setup-php@v1
         with:
           php-version: 7.2
           tools: composer v2
