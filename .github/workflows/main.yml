@@ -1,34 +1,37 @@
-name: CD
- 
+name: php-laraval-travellist-demo
+
 on:
   push:
-    branches: [ main ]
- 
+    branches:
+     - main
 jobs:
+
   deploy:
     runs-on: ubuntu-latest
+
     steps:
-    - uses: actions/checkout@v2
-      with:
-        token: ${{ secrets.VAPOR_API_TOKEN }}
-    - name: Set up Node
-      uses: actions/setup-node@v1
-      with:
-        node-version: '12.x'
-    - run: npm install
-    - run: npm run production
-    - name: Commit built assets
-      run: |
-        git config --local user.email "riddhid@webmobtech.com.com"
-        git config --local user.name "wmt-riddhid"
-        git checkout -B deploy
-        git add -f public/
-        git commit -m "Build front-end assets"
-        git push -f origin deploy
-    - name: Deploy to production
-      uses: appleboy/ssh-action@master
-      with:
-        username: YOUR USERNAME GOES HERE
-        host: YOUR SERVER'S HOSTNAME GOES HERE
-        password: ${{ secrets.SSH_PASSWORD }}
-        script: 'cd /var/www/html && ./server_deploy.sh'
+      - name: chackout code
+        uses: actions/checkout@v2
+      
+      - name: setup PHP
+        uses: actions/setup-php@v2
+        with:
+          php-version: 7.2
+          tools: composer v2
+          coverage: none
+      
+      - name: Require Vapor CLI
+        run: composer global require laravel/vapor-cli
+
+      - name: Install Project Dependencies
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+
+      - name: Deploy Environment
+        run: vapor deploy
+        env:
+          VAPOR_API_TOKEN: ${{ secrets.VAPOR_API_TOKEN }}
+
+    #  - name: run tests
+    #    run: npm run test
+
+    
