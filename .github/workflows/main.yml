@@ -20,11 +20,10 @@ jobs:
         run: composer global require laravel/vapor-cli
       - name: Install Project Dependencies
         run: composer install --no-interaction --prefer-dist --optimize-autoloader
-      - name: Deploy using Laravel Vapor
+      - name: Deploy Environment
+        run: ./vendor/bin/vapor deploy --commit="${{ github.event.head_commit.id }}" --message="${{ github.event.head_commit.message }}"  --without-waiting
         env:
           VAPOR_API_TOKEN: ${{ secrets.VAPOR_API_TOKEN }}
-        run: /home/runner/.composer/vendor/bin/vapor deploy production --commit="${{ github.event.head_commit.id }}" --message="${{ github.event.head_commit.message }}"
-
 #      - name: Deploy Environment
 #        run: vapor deploy 
 #        env:
