@@ -11,7 +11,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Setup PHP
-        uses: wmt-riddhid/setup-php@v2
+        uses: wmt_riddhid/setup-php@v2
         with:
           php-version: 7.2
           tools: composer:v2
