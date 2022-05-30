@@ -6,7 +6,6 @@ on:
  
 jobs:
   build-php:
-    services:
     name: Build PHP
     runs-on: ubuntu-latest
     container: lorisleiva/laravel-docker:7.4
