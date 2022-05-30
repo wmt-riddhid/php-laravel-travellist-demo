@@ -1,37 +1,26 @@
-name: php-laraval-travellist-demo
+name: Deploy
 
 on:
   push:
-    branches:
-     - main
-jobs:
+    branches: [ main ]
 
+jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
-      - name: chackout code
-        uses: actions/checkout@v1
-      
-      - name: setup PHP
-        uses: actions/setup-php@v1
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
         with:
           php-version: 7.2
-          tools: composer v2
+          tools: composer:v2
           coverage: none
-      
       - name: Require Vapor CLI
         run: composer global require laravel/vapor-cli
-
       - name: Install Project Dependencies
         run: composer install --no-interaction --prefer-dist --optimize-autoloader
-
       - name: Deploy Environment
         run: vapor deploy
         env:
           VAPOR_API_TOKEN: ${{ secrets.VAPOR_API_TOKEN }}
-
-    #  - name: run tests
-    #    run: npm run test
-
-    
