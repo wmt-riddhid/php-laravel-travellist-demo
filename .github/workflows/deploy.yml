@@ -38,7 +38,6 @@ jobs:
     if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/staging'
     name: Deploy application
     runs-on: ubuntu-latest
-    container: lorisleiva/laravel-docker:7.4
     needs: [build-php]
     env:
       VAPOR_API_TOKEN: ${{ secrets.VAPOR_API_TOKEN }}
